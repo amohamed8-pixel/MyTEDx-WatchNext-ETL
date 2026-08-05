@@ -1,53 +1,73 @@
 import json
 import boto3
-from botocore.exceptions import ClientError
+from decimal import Decimal
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('MyTEDx_Talks')
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj) if obj % 1 == 0 else float(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 def lambda_handler(event, context):
-    # Connessione al database DynamoDB
-    dynamodb = boto3.resource('dynamodb')
+    headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET,OPTIONS'
+    }
     
-    # Nome della tabella
-    table = dynamodb.Table('MyTEDx_WatchNext_Table')
-
-    # Estrazione dell'ID del video dalla richiesta API
     try:
-        video_id = event['queryStringParameters']['idx']
-    except (KeyError, TypeError):
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': 'Missing parameter: idx'})
-        }
-
-    # Ricerca del video in DynamoDB
-    try:
-        response = table.get_item(Key={'video_id': video_id})
+        query_params = event.get('queryStringParameters') or {}
+        idx_param = query_params.get('idx')
         
-        # Se il video esiste, restituisce i talk consigliati
-        if 'Item' in response:
-            item = response['Item']
+        if not idx_param:
             return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'  
-                },
-                'body': json.dumps({
-                    'video_id': item['video_id'],
-                    'watch_next': item.get('recommended_talks', []),
-                    'reason': 'Suggerito in base ai percorsi di studio degli altri utenti'
-                })
+                'statusCode': 400,
+                'headers': headers,
+                'body': json.dumps({'error': 'Missing parameter: idx'})
             }
-        else:
-            # Se il video non esiste
+        
+        try:
+            lookup_key = int(idx_param)
+        except ValueError:
+            lookup_key = idx_param
+
+        response = table.get_item(Key={'idx': lookup_key})
+        item = response.get('Item')
+        
+        if not item:
             return {
                 'statusCode': 404,
+                'headers': headers,
                 'body': json.dumps({'error': 'Video not found'})
             }
             
-    except ClientError as e:
-        # Gestione degli errori di connessione AWS
+        if 'quiz' not in item:
+            item['quiz'] = [
+                {
+                    "question": "Qual è il tema principale affrontato in questo talk?",
+                    "options": [
+                        "Innovazione e Tecnologia",
+                        "Sviluppo Personale e Società",
+                        "Scienza e Ricerca Applicata"
+                    ],
+                    "correct_idx": 0
+                }
+            ]
+
+        return {
+            'statusCode': 200,
+            'headers': headers,
+            'body': json.dumps(item, cls=DecimalEncoder)
+        }
+
+    except Exception as e:
+        print(f"Error processing request: {str(e)}")
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
+            'headers': headers,
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
         }
-        
