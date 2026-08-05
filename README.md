@@ -4,8 +4,13 @@
 **Matricola:** 1100748  
 **Course:** Piattaforme Cloud e Mobile (21069) — A.A. 2024/2025  
 **Docent:** Prof. Mauro Pelucchi  
+**Repository:** https://github.com/amohamed8-pixel/MyTEDx-WatchNext-ETL
 
 ---
+
+## 🚀 Live API Endpoint
+- **Base Endpoint:** `https://2hix9nunuk.execute-api.us-east-1.amazonaws.com/default/Get_Watch_Next_by_Idx`
+- **Example Request:** `https://2hix9nunuk.execute-api.us-east-1.amazonaws.com/default/Get_Watch_Next_by_Idx?video_id=talk_001`
 
 ## 📌 Descrizione del Progetto
 In questa fase del progetto MyTEDx, è stata implementata un'architettura **Serverless Backend** basata su **AWS Lambda** e **Amazon API Gateway** per servire i dati denormalizzati da **Amazon DynamoDB** all'applicazione mobile Flutter.
