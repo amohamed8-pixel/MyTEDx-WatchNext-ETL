@@ -1,45 +1,53 @@
-# MyTEDx — Homework 3: Serverless API (AWS Lambda & API Gateway)
+# MyTEDx — Homework 3: Serverless API & Interactive Quiz Engine
 
-**Studente:** Ahmed Sabry Azab Mohamed  
+**Student:** Ahmed Sabry Azab Mohamed  
 **Matricola:** 1100748  
-**Docente:** Prof. Mauro Pelucchi  
-**Corso:** Piattaforme Cloud e Mobile (21069)  
+**Course:** Piattaforme Cloud e Mobile (21069) — A.A. 2024/2025  
+**Docent:** Prof. Mauro Pelucchi  
 
 ---
 
-## Descrizione del Progetto
-In questa fase del progetto, è stata sviluppata un'architettura serverless per fornire le raccomandazioni **"Watch Next"** all'applicazione mobile MyTEDx in modo dinamico e ad alta prestazione (latenza < 100ms).
+## 📌 Descrizione del Progetto
+In questa fase del progetto MyTEDx, è stata implementata un'architettura **Serverless Backend** basata su **AWS Lambda** e **Amazon API Gateway** per servire i dati denormalizzati da **Amazon DynamoDB** all'applicazione mobile Flutter.
+
+Il backend supporta la restituzione unificata di:
+1. **Metadati del Video**: Titolo, speaker e id del talk.
+2. **Watch Next Engine**: Raccomandazioni di talk correlati (`recommended_talks`) accompagnate da una motivazione esplicita (`reason`).
+3. **Interactive Quiz Engine**: Test di comprensione integrato (*Active Learning*) da eseguire in locale sul client mobile senza ulteriore latenza di rete.
 
 ---
 
-## Tecnologie Utilizzate
-* **AWS Lambda:** Sviluppo della funzione `Get_Watch_Next_by_Idx` in Python 3.x per interrogare i dati elaborati.
-* **Amazon API Gateway:** Creazione di un endpoint RESTful per esporre la funzione Lambda.
-* **Amazon DynamoDB:** Database NoSQL utilizzato per la lettura veloce delle raccomandazioni con accesso **O(1)**.
+## 🏗️ Architettura Serverless [ App Flutter ] ---> (HTTPS GET) ---> [ API Gateway ] ---> (Invoke) ---> [ AWS Lambda (Python 3) ] ---> (GetItem) ---> [ Amazon DynamoDB ]
+- **Amazon API Gateway**: REST Endpoint con abilitazione CORS e routing delle richieste.
+- **AWS Lambda**: Execution Engine serverless con supporto `boto3` e gestione della serializzazione dei tipi `Decimal`.
+- **Amazon DynamoDB**: Database NoSQL denormalizzato con lettura $O(1)$ tramite Partition Key (`video_id`).
 
 ---
 
-## Funzionalità
-L'API riceve l'ID del video (`idx`) tramite query string e restituisce un payload JSON contenente:
-1. L'ID del video originale (`video_id`).
-2. Una lista di video suggeriti (`watch_next`).
-3. Il motivo della raccomandazione (`reason`), es: *"Suggerito in base ai percorsi di studio degli altri utenti"*.
+## 🚀 REST API Endpoints
 
----
+### 1. Get Watch Next & Quiz by Video ID
+- **URL:** `https://<api-id>.execute-api.us-east-1.amazonaws.com/default/Get_Watch_Next_by_Idx`
+- **Method:** `GET`
+- **URL Params:** `video_id=[string]` (es. `video_id=talk_001`)
 
-## Endpoint Live & Test (HTTP 200 OK)
-
-**URL REST API:**
-```http
-GET [https://2hix9nunuk.execute-api.us-east-1.amazonaws.com/default/Get_Watch_Next_by_Idx?idx=talk_001](https://2hix9nunuk.execute-api.us-east-1.amazonaws.com/default/Get_Watch_Next_by_Idx?idx=talk_001)
-
-
-Esempio di Payload JSON restituito:
+#### Example Response (`200 OK`):
+```json
 {
   "video_id": "talk_001",
-  "watch_next": [
-    "talk_002",
-    "talk_003"
-  ],
-  "reason": "Suggerito in base ai percorsi di studio degli altri utenti"
+  "title": "The Future of Quantum Computing in STEM",
+  "speaker": "Dr. Elena Rossi",
+  "recommended_talks": ["talk_002", "talk_003"],
+  "reason": "Correlazione basata sui temi del talk",
+  "quiz": [
+    {
+      "question": "Qual è il tema principale affrontato in questo talk?",
+      "options": [
+        "Innovazione e Tecnologia",
+        "Sviluppo Personale e Società",
+        "Scienza e Ricerca Applicata"
+      ],
+      "correct_idx": 0
+    }
+  ]
 }
