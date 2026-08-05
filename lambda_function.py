@@ -3,7 +3,7 @@ import boto3
 from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('MyTEDx_Talks')
+table = dynamodb.Table('MyTEDx_WatchNext_Table')
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -21,21 +21,18 @@ def lambda_handler(event, context):
     
     try:
         query_params = event.get('queryStringParameters') or {}
-        idx_param = query_params.get('idx')
+        # قبول المتغير سواء بعته العميل باسم idx أو video_id
+        video_id_param = query_params.get('idx') or query_params.get('video_id')
         
-        if not idx_param:
+        if not video_id_param:
             return {
                 'statusCode': 400,
                 'headers': headers,
-                'body': json.dumps({'error': 'Missing parameter: idx'})
+                'body': json.dumps({'error': 'Missing parameter: idx or video_id'})
             }
-        
-        try:
-            lookup_key = int(idx_param)
-        except ValueError:
-            lookup_key = idx_param
 
-        response = table.get_item(Key={'idx': lookup_key})
+        # البحث بـ video_id كـ String مباشرة
+        response = table.get_item(Key={'video_id': str(video_id_param)})
         item = response.get('Item')
         
         if not item:
@@ -45,6 +42,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Video not found'})
             }
             
+        # إدراج الـ Quiz لو مش موجود في الداتا
         if 'quiz' not in item:
             item['quiz'] = [
                 {
