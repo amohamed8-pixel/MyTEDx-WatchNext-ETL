@@ -4,7 +4,6 @@
 **Matricola:** 1100748  
 **Course:** Piattaforme Cloud e Mobile (21069) — A.A. 2024/2025  
 **Docent:** Prof. Mauro Pelucchi  
-**Repository:** https://github.com/amohamed8-pixel/MyTEDx-WatchNext-ETL
 
 ---
 
